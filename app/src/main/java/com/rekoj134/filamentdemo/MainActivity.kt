@@ -39,6 +39,15 @@ class MainActivity : AppCompatActivity() {
         binding.surfaceView.apply {
             renderer.onSurfaceAvailable(this, lifecycle)
         }
+        binding.joystick.listener = object : JoystickView.OnJoystickMoveListener {
+            override fun onMove(x: Float, y: Float, angle: Float, strength: Float) {
+                renderer.setMoveDirection(x, -y)
+            }
+
+            override fun onRelease() {
+                renderer.setMoveDirection(0f, 0f)
+            }
+        }
         requestPermissions()
     }
 
@@ -70,7 +79,7 @@ class MainActivity : AppCompatActivity() {
                 it.surfaceProvider = binding.viewFinder.surfaceProvider
             }
 
-            val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
                 cameraProvider.unbindAll()

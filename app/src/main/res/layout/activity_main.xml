@@ -17,4 +17,11 @@
         android:background="@android:color/transparent"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <com.rekoj134.filamentdemo.JoystickView
+        android:id="@+id/joystick"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_gravity="bottom"
+        android:layout_margin="64dp"/>
 </FrameLayout>

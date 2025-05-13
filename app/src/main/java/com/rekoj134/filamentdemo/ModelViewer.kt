@@ -31,6 +31,11 @@ class ModelRenderer {
 
     private var headlightEntity: Int = 0
 
+    private var moveDirX = 0f
+    private var moveDirY = 0f
+    private var posX = 0f
+    private var posY = 0f
+
     private val lifecycleObserver = object : DefaultLifecycleObserver {
         override fun onResume(owner: LifecycleOwner) {
             choreographer.postFrameCallback(frameScheduler)
@@ -45,6 +50,8 @@ class ModelRenderer {
             lifecycle.removeObserver(this)
         }
     }
+
+    private var lastAngleDeg = 0f
 
     @SuppressLint("ClickableViewAccessibility")
     fun onSurfaceAvailable(surfaceView: SurfaceView, lifecycle: Lifecycle) {
@@ -61,7 +68,6 @@ class ModelRenderer {
         modelViewer = ModelViewer(surfaceView = surfaceView, uiHelper = uiHelper)
 
         surfaceView.setOnTouchListener { _, event ->
-            modelViewer.onTouchEvent(event)
             true
         }
 
@@ -128,8 +134,47 @@ class ModelRenderer {
                 updateBoneMatrices()
             }
 
+            val speed = 0.015f // tốc độ bước mỗi frame
+            posX += moveDirX * speed
+            posY += moveDirY * speed
+
+            // Góc quay đầu theo hướng đi
+            val angle = if (moveDirX != 0f || moveDirY != 0f) {
+                Math.toDegrees(kotlin.math.atan2(moveDirX, -moveDirY).toDouble()).toFloat()
+            } else 0f
+
+            val transformMatrix = FloatArray(16)
+            android.opengl.Matrix.setIdentityM(transformMatrix, 0)
+
+            // Dịch model xuống sàn và lùi ra xa
+            android.opengl.Matrix.translateM(transformMatrix, 0, 0f, -1.0f, -2.5f)
+
+            val local = FloatArray(16)
+            android.opengl.Matrix.setIdentityM(local, 0)
+
+            // Scale động dựa trên khoảng cách theo trục Y
+            val baseScale = 1f
+            val scaleFactor = 1f - (posY * 0.3f).coerceIn(-0.5f, 0.5f)
+            val finalScale = baseScale * scaleFactor
+            android.opengl.Matrix.scaleM(local, 0, finalScale, finalScale, finalScale)
+
+            android.opengl.Matrix.translateM(local, 0, posX, posY, 0f)
+            android.opengl.Matrix.rotateM(local, 0, angle, 0f, 1f, 0f)
+
+            android.opengl.Matrix.multiplyMM(transformMatrix, 0, transformMatrix, 0, local, 0)
+
+            modelViewer.asset?.root?.let {
+                val tcm = modelViewer.engine.transformManager
+                val inst = tcm.getInstance(it)
+                tcm.setTransform(inst, transformMatrix)
+            }
+
             modelViewer.render(frameTimeNanos)
         }
+    }
 
+    fun setMoveDirection(x: Float, y: Float) {
+        moveDirX = x
+        moveDirY = y
     }
 }
