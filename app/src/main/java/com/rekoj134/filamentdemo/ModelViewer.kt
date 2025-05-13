@@ -7,6 +7,8 @@ import android.view.SurfaceView
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import com.google.android.filament.EntityManager
+import com.google.android.filament.LightManager
 import com.google.android.filament.View
 import com.google.android.filament.android.UiHelper
 import com.google.android.filament.utils.ModelViewer
@@ -26,6 +28,8 @@ class ModelRenderer {
         get() = surfaceView.context.assets
 
     private val frameScheduler = FrameCallback()
+
+    private var headlightEntity: Int = 0
 
     private val lifecycleObserver = object : DefaultLifecycleObserver {
         override fun onResume(owner: LifecycleOwner) {
@@ -51,31 +55,24 @@ class ModelRenderer {
 
         choreographer = Choreographer.getInstance()
         uiHelper = UiHelper(UiHelper.ContextErrorPolicy.DONT_CHECK).apply {
-            // This is needed to make the background transparent
             isOpaque = false
         }
 
         modelViewer = ModelViewer(surfaceView = surfaceView, uiHelper = uiHelper)
 
-        // This is needed so we can move the camera in the rendering
         surfaceView.setOnTouchListener { _, event ->
             modelViewer.onTouchEvent(event)
             true
         }
 
-        // This is the other code needed to make the background transparent
         modelViewer.scene.skybox = null
         modelViewer.view.blendMode = View.BlendMode.TRANSLUCENT
         modelViewer.renderer.clearOptions = modelViewer.renderer.clearOptions.apply {
             clear = true
         }
 
-        // This part defines the quality of your model, feel free to change it or
-        // add other options
-        modelViewer.view.apply {
-            renderQuality = renderQuality.apply {
-                hdrColorBuffer = View.QualityLevel.LOW
-            }
+        modelViewer.view.renderQuality = modelViewer.view.renderQuality.apply {
+            hdrColorBuffer = View.QualityLevel.LOW
         }
 
         createRenderables()
@@ -94,12 +91,45 @@ class ModelRenderer {
 
         modelViewer.loadModelGlb(buffer)
         modelViewer.transformToUnitCube()
+
+        val entityManager = EntityManager.get()
+        headlightEntity = entityManager.create()
+
+        LightManager.Builder(LightManager.Type.DIRECTIONAL)
+            .color(1.0f, 1.0f, 1.0f)
+            .intensity(100_000.0f)
+            .direction(0.0f, 0.0f, -1.0f)
+            .castShadows(false)
+            .build(modelViewer.engine, headlightEntity)
+
+        modelViewer.scene.addEntity(headlightEntity)
     }
 
     inner class FrameCallback : Choreographer.FrameCallback {
+        var startTime = System.nanoTime()
+
         override fun doFrame(frameTimeNanos: Long) {
             choreographer.postFrameCallback(this)
+
+            // Cập nhật hướng đèn theo camera
+            val cam = modelViewer.camera
+            val look = FloatArray(3)
+            cam.getForwardVector(look)
+            modelViewer.engine.lightManager.setDirection(
+                modelViewer.engine.lightManager.getInstance(headlightEntity),
+                look[0], look[1], look[2]
+            )
+
+            modelViewer.animator?.apply {
+                if (animationCount > 0) {
+                    val elapsedTimeSeconds = (frameTimeNanos - startTime).toDouble() / 1_000_000_000
+                    applyAnimation(2, elapsedTimeSeconds.toFloat())
+                }
+                updateBoneMatrices()
+            }
+
             modelViewer.render(frameTimeNanos)
         }
+
     }
 }
