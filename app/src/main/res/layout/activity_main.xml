@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/simple_layout"
     android:layout_width="match_parent"
-    android:background="@color/white"
+    android:background="#CB0000"
     android:layout_height="match_parent">
 
     <!-- Camera Preview ở dưới -->
@@ -14,6 +14,7 @@
     <!-- GLSurfaceView sẽ đè lên -->
     <SurfaceView
         android:id="@+id/surfaceView"
+        android:background="@android:color/transparent"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 </FrameLayout>

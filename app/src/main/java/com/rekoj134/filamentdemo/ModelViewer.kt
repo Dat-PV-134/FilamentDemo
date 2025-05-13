@@ -74,7 +74,7 @@ class ModelRenderer {
         // add other options
         modelViewer.view.apply {
             renderQuality = renderQuality.apply {
-                hdrColorBuffer = View.QualityLevel.MEDIUM
+                hdrColorBuffer = View.QualityLevel.LOW
             }
         }
 
