@@ -139,9 +139,9 @@ class ModelRenderer {
             posY += moveDirY * speed
 
             // Góc quay đầu theo hướng đi
-            val angle = if (moveDirX != 0f || moveDirY != 0f) {
+            lastAngleDeg = if (moveDirX != 0f || moveDirY != 0f) {
                 Math.toDegrees(kotlin.math.atan2(moveDirX, -moveDirY).toDouble()).toFloat()
-            } else 0f
+            } else lastAngleDeg
 
             val transformMatrix = FloatArray(16)
             android.opengl.Matrix.setIdentityM(transformMatrix, 0)
@@ -159,7 +159,7 @@ class ModelRenderer {
             android.opengl.Matrix.scaleM(local, 0, finalScale, finalScale, finalScale)
 
             android.opengl.Matrix.translateM(local, 0, posX, posY, 0f)
-            android.opengl.Matrix.rotateM(local, 0, angle, 0f, 1f, 0f)
+            android.opengl.Matrix.rotateM(local, 0, lastAngleDeg, 0f, 1f, 0f)
 
             android.opengl.Matrix.multiplyMM(transformMatrix, 0, transformMatrix, 0, local, 0)
 
